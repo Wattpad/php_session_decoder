@@ -2,6 +2,8 @@ package php_serialize
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
 	"strconv"
 )
 
@@ -147,21 +149,63 @@ func (self *Serializer) encodeArray(v PhpValue, isFinal bool) (res string) {
 	case PhpArray:
 		arrVal, _ := v.(PhpArray)
 		arrLen = len(arrVal)
-		for k, v := range arrVal {
-			s, _ = self.Encode(k)
-			data += s
-			s, _ = self.Encode(v)
-			data += s
+		keys := []interface{}{}
+		intKeys := []int{}
+
+		for k := range arrVal {
+			keys = append(keys, k)
+			if reflect.TypeOf(k).Kind() == reflect.Int {
+				intKeys = append(intKeys, k.(int))
+			}
 		}
 
+		if len(intKeys) == arrLen {
+			// Sort keys
+			sort.Ints(intKeys)
+			for _, key := range intKeys {
+				s, _ = self.Encode(key)
+				data += s
+				s, _ = self.Encode(arrVal[key])
+				data += s
+			}
+		} else {
+			for _, key := range keys {
+				s, _ = self.Encode(key)
+				data += s
+				s, _ = self.Encode(arrVal[key])
+				data += s
+			}
+		}
 	case map[PhpValue]PhpValue:
 		arrVal, _ := v.(map[PhpValue]PhpValue)
 		arrLen = len(arrVal)
-		for k, v := range arrVal {
-			s, _ = self.Encode(k)
-			data += s
-			s, _ = self.Encode(v)
-			data += s
+		keys := []interface{}{}
+		intKeys := []int{}
+
+		// Sort keys
+		for k := range arrVal {
+			keys = append(keys, k)
+			if reflect.TypeOf(k).Kind() == reflect.Int {
+				intKeys = append(intKeys, k.(int))
+			}
+		}
+
+		if len(intKeys) == arrLen {
+			// Sort keys
+			sort.Ints(intKeys)
+			for _, key := range intKeys {
+				s, _ = self.Encode(key)
+				data += s
+				s, _ = self.Encode(arrVal[key])
+				data += s
+			}
+		} else {
+			for _, key := range keys {
+				s, _ = self.Encode(key)
+				data += s
+				s, _ = self.Encode(arrVal[key])
+				data += s
+			}
 		}
 	}
 
